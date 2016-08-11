@@ -9,15 +9,18 @@ var testDispatcher = new Dispatcher();
 
 var TestApp = React.createClass({
   getInitialState: function () {
-    return {value: null};
+    return TestStore.getAll();
   },
-  setInputVal: function (testValue) {
-    this.setState({value: testValue});
+  componentDidMount: function () {
+    var self = this;
+    TestStore.addChangeListener(function () {
+      self.setState(TestStore.getAll());
+    });
   },
   render: function () {
     return (
       <div className="testApp">
-        <TestForm onClickBtn={this.setInputVal} />
+        <TestForm />
         <TestDisplay data={this.state.value} />
       </div>
     );
@@ -28,7 +31,7 @@ var TestForm = React.createClass({
   send: function (e) {
     e.preventDefault();
     var testValue = React.findDOMNode(this.refs.test_value).value.trim();
-    this.props.onClickBtn(testValue);
+    TestAction.test(testValue);
     React.findDOMNode(this.refs.test_value).value = "";
     return;
   },
@@ -64,3 +67,23 @@ var TestAction = {
     });
   }
 };
+
+var _test = {value: null};
+
+var TestStore = assign({}, EventEmitter.prototype, {
+  getAll: function () {
+    // _testオブジェクトを返す
+    return _test;
+  },
+  emitChange: function () {
+    this.emit("change");
+  },
+  addChangeListener: function (callback) {
+    this.on("change", callback);
+  },
+  dispatcherIndex: testDispatcher.register(function (payload) {
+    if (payload.actionType === "test") {
+      _test.value = payload.value;
+    }
+  })
+});
